@@ -125,7 +125,7 @@ function getTupleHash(t: Tuple, seed: number) {
 }
 
 export const tupleCache: TupleCache = new Map<Hash, Set<WeakRef<Tuple>>>();
-export const tupleCacheCleanupRegistry: TupleCacheCleanupRegistry =
+const tupleCacheCleanupRegistry: TupleCacheCleanupRegistry =
   new FinalizationRegistry(removeTupleRefFromCache);
 
 function getTupleFromCache<T extends Tuple>(
@@ -163,7 +163,6 @@ function removeTupleRefFromCache([cache, hash, tRef]: [
   number,
   WeakRef<Tuple>
 ]): void {
-  // console.log("REMOVING FROM TUPLE CACHE");
   cleanupListeners.forEach((cb) => cb(cache, hash, tRef));
   const tupleSet = cache.get(hash);
   if (tupleSet === undefined) throw new Error("Could not get tuple set");
