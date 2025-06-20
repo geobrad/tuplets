@@ -81,7 +81,7 @@ function numberToUint32s(value: number): Hash[] {
   const buffer = new ArrayBuffer(8); // 8 bytes = 64 bits
   const view = new DataView(buffer);
   view.setFloat64(0, value);
-  return [numberSeed, view.getUint32(0), view.getUint32(4)];
+  return [view.getUint32(0), view.getUint32(4)];
 }
 
 function bigIntToUint32s(value: bigint): Hash[] {
@@ -182,12 +182,14 @@ export function tuple<T extends unknown[]>(...args: T): Tuple<T> {
 function allEqual(a1: readonly unknown[], a2: readonly unknown[]): boolean {
   if (a2.length !== a1.length) return false;
   for (let i = 0; i < a1.length; i++) {
-    if (a2[i] !== a1[i]) return false;
+    if (!Object.is(a2[i], a1[i])) return false; // Object.is(NaN, NaN) but NaN != NaN
   }
   return true;
 }
 
-const cleanupListeners = new Set<(cache: TupleCache, hash: Hash, tRef: WeakRef<Tuple>) => void>();
+const cleanupListeners = new Set<
+  (cache: TupleCache, hash: Hash, tRef: WeakRef<Tuple>) => void
+>();
 export function registerTupleCleanupListener(
   callback: (cache: TupleCache, hash: Hash, tRef: WeakRef<Tuple>) => void
 ): () => void {

@@ -23,8 +23,9 @@ test("Iterability", () => {
 
 test("Basic interned equality (if same input, same object)", () => {
   const a = {};
-  const t1 = tuple(a, 42, "hi", 7839278492n);
-  const t2 = tuple(a, 42, "hi", 7839278492n);
+  const f = () => {};
+  const t1 = tuple(a, f, 42, "hi", undefined, true, null, NaN, 7839278492n);
+  const t2 = tuple(a, f, 42, "hi", undefined, true, null, NaN, 7839278492n);
   expect(t1).toBe(t2); // same object reference
 });
 
