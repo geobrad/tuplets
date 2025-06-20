@@ -48,7 +48,9 @@ test("Tuples are frozen", () => {
 test("Nestable", () => {
   const t1 = tuple("a", tuple("b1", "b2"), "c");
   const t2 = tuple("a", tuple("b1", "b2"), "c");
+  const t3 = tuple("a", tuple("b1", "b3"), "c");
   expect(t2).toBe(t1);
+  expect(t3).not.toBe(t1);
 });
 
 test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
