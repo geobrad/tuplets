@@ -35,10 +35,12 @@ test("Referential inequality (same structure, different references)", () => {
   expect(t1).not.toBe(t2); // different objects
 });
 
-test("Length matters", () => {
+test("Different-length tuples are different tuples", () => {
   const t1 = tuple(1, 2);
   const t2 = tuple(1, 2, 3);
+  const t3 = tuple(1, 2, undefined);
   expect(t1).not.toBe(t2);
+  expect(t1).not.toBe(t3);
 });
 
 test("Tuples are frozen", () => {
