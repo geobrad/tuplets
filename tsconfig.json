@@ -2,9 +2,8 @@
   "compilerOptions": {
     "target": "ES2021",              // supports WeakRef, FinalizationRegistry natively
     "module": "ESNext",              // or "CommonJS" if you want CommonJS output
-    "lib": ["ES2021"],               // include ES2021 libs (WeakRef, FinalizationRegistry)
     "declaration": true,             // generate .d.ts files
-    "declarationMap": true,          // generate source maps for declarations
+    "declarationMap": true,
     "strict": true,                  // enable strict type checks
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,         // allow default imports from CommonJS modules
@@ -12,7 +11,6 @@
     "skipLibCheck": true,            // speed up build by skipping lib .d.ts checks
     "moduleResolution": "node",      // resolve modules like Node.js
     "outDir": "./dist",              // output directory for compiled files
-    "sourceMap": true                // generate source maps
   },
   "files": ["src/index.ts"],
 }
