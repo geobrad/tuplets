@@ -17,7 +17,8 @@ test("Indexability", () => {
 test("Iterability", () => {
   const a = {};
   const t = tuple(42, "blah", a);
-  // TODO: complete this test
+  expect(typeof t[Symbol.iterator]).toBe("function");
+  expect([...t]).toEqual([42, "blah", a]);
 });
 
 test("Basic interned equality (if same input, same object)", () => {
