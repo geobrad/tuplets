@@ -1,5 +1,17 @@
 import { tuple, tupleCache } from ".";
 
+// Putting this test first in case the testing framework keeps references to tuples to report test failures
+test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
+  tuple(42);
+
+  // Trigger garbage collection (requires node --expose-gc)
+  await new Promise((res) => setTimeout(res, 100));
+  (global as any).gc();
+  await new Promise((res) => setTimeout(res, 100));
+
+  expect(tupleCache.size).toBe(0);
+});
+
 test("Empty tuples", () => {
   const a = tuple();
   const b = tuple();
@@ -24,8 +36,8 @@ test("Iterability", () => {
 test("Basic interned equality (if same input, same object)", () => {
   const a = {};
   const f = () => {};
-  const t1 = tuple(a, f, 42, "hi", undefined, true, null, NaN, 7839278492n);
-  const t2 = tuple(a, f, 42, "hi", undefined, true, null, NaN, 7839278492n);
+  const t1 = tuple(a, f, 42, "hi", undefined, true, null, 7839278492n);
+  const t2 = tuple(a, f, 42, "hi", undefined, true, null, 7839278492n);
   expect(t1).toBe(t2); // same object reference
 });
 
@@ -56,13 +68,10 @@ test("Nestable", () => {
   expect(t3).not.toBe(t1);
 });
 
-test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
-  tuple(42);
+test("NaN is equivalent to itself", () => {
+  expect(tuple(NaN)).toBe(tuple(NaN));
+});
 
-  // Now simulate GC
-  await new Promise((res) => setTimeout(res, 100));
-  (global as any).gc();
-  await new Promise((res) => setTimeout(res, 100));
-
-  expect(tupleCache.size).toBe(0);
+test("Positive and negative zero are equivalent", () => {
+  expect(tuple(+0)).toBe(tuple(-0));
 });

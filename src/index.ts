@@ -63,7 +63,7 @@ function stringToUint32s(value: string): number[] {
 function numberToUint32s(value: number): number[] {
   const buffer = new ArrayBuffer(8); // 8 bytes = 64 bits
   const view = new DataView(buffer);
-  view.setFloat64(0, value);
+  view.setFloat64(0, value === -0 ? 0 : value); // Hash -0 as if it's 0
   return [view.getUint32(0), view.getUint32(4)];
 }
 
@@ -117,10 +117,10 @@ export function tuple<T extends unknown[]>(...args: T): Tuple<T> {
   return tupleCache.get<T>(args);
 }
 
-function allEqual(a1: readonly unknown[], a2: readonly unknown[]): boolean {
+function allEqual(a1: Tuple, a2: Tuple): boolean {
   if (a2.length !== a1.length) return false;
   for (let i = 0; i < a1.length; i++) {
-    if (!Object.is(a2[i], a1[i])) return false; // Object.is(NaN, NaN) but NaN != NaN
+    if (a1[i] === 0 ? a2[i] !== 0 : !Object.is(a2[i], a1[i])) return false;
   }
   return true;
 }
