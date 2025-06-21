@@ -63,7 +63,8 @@ function stringToUint32s(value: string): number[] {
 function numberToUint32s(value: number): number[] {
   const buffer = new ArrayBuffer(8); // 8 bytes = 64 bits
   const view = new DataView(buffer);
-  view.setFloat64(0, value === -0 ? 0 : value); // Hash -0 as if it's 0
+  const adjustedValue = value === -0 ? 0 : value; // Ensure +0 and -0 give the same result
+  view.setFloat64(0, adjustedValue);
   return [view.getUint32(0), view.getUint32(4)];
 }
 
@@ -109,7 +110,7 @@ function getTupleHash(t: Tuple, seed: number) {
 
 export const tupleCache = new HashCache<number, Tuple>(
   (t) => getTupleHash(t, tupleSeed),
-  allEqual
+  allEquivalent
 );
 
 export function tuple<T extends unknown[]>(...args: T): Tuple<T> {
@@ -117,10 +118,11 @@ export function tuple<T extends unknown[]>(...args: T): Tuple<T> {
   return tupleCache.get<T>(args);
 }
 
-function allEqual(a1: Tuple, a2: Tuple): boolean {
+function allEquivalent(a1: Tuple, a2: Tuple): boolean {
   if (a2.length !== a1.length) return false;
   for (let i = 0; i < a1.length; i++) {
-    if (a1[i] === 0 ? a2[i] !== 0 : !Object.is(a2[i], a1[i])) return false;
+    if (a1[i] === 0 && a2[i] === 0) continue; // Consider +0 and -0 to be equivalent
+    if (!Object.is(a2[i], a1[i])) return false; // Consider NaN to be equivalent to itself despite NaN !== NaN
   }
   return true;
 }
