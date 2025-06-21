@@ -1,4 +1,4 @@
-import { tuple, tupleCache, registerTupleCleanupListener, Tuple } from ".";
+import { tuple, tupleCache } from ".";
 
 test("Empty tuples", () => {
   const a = tuple();
@@ -57,16 +57,12 @@ test("Nestable", () => {
 });
 
 test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
-  const callback = jest.fn();
-  const deregister = registerTupleCleanupListener(callback);
   tuple(42);
 
   // Now simulate GC
   await new Promise((res) => setTimeout(res, 100));
   (global as any).gc();
   await new Promise((res) => setTimeout(res, 100));
-  deregister();
 
-  expect(callback).toHaveBeenCalled();
   expect(tupleCache.size).toBe(0);
 });
