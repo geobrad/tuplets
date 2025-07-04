@@ -1,3 +1,3 @@
-# Tuplets
+# TupleTS
 
-Tuplets is a fast, memory-safe implementation of python-style tuples.
+TupleTS is an implementation of interned tuples and records intended to be memory-safe, performant, and lightweight.
