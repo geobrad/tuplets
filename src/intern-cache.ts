@@ -1,12 +1,12 @@
 export default class <H, T extends object> {
   private readonly map: Map<H, Set<WeakRef<T>>> = new Map();
   private readonly hashFn: (obj: T) => H;
-  private readonly equalFn: (obj1: T, obj2: T) => boolean;
+  private readonly identityFn: (obj1: T, obj2: T) => boolean;
   private cleanupRegistry = new FinalizationRegistry(this.remove.bind(this));
 
-  constructor(hashFn: (obj: T) => H, equalFn: (obj1: T, obj2: T) => boolean) {
+  constructor(hashFn: (obj: T) => H, identityFn: (obj1: T, obj2: T) => boolean) {
     this.hashFn = hashFn;
-    this.equalFn = equalFn;
+    this.identityFn = identityFn;
   }
 
   private remove([hash, ref]: [H, WeakRef<T>]): void {
@@ -23,7 +23,7 @@ export default class <H, T extends object> {
     if (hashBucket !== undefined) {
       for (const ref of hashBucket) {
         const o = ref.deref();
-        if (o && this.equalFn(o, obj)) return o as U;
+        if (o && this.identityFn(o, obj)) return o as U;
       }
     } else {
       // This hash has no bucket. Create one.

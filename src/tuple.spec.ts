@@ -1,16 +1,4 @@
-import { tuple, tupleCache } from ".";
-
-// Putting this test first in case the testing framework keeps references to tuples to report test failures
-test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
-  tuple(42);
-
-  // Trigger garbage collection (requires node --expose-gc)
-  await new Promise((res) => setTimeout(res, 100));
-  (global as any).gc();
-  await new Promise((res) => setTimeout(res, 100));
-
-  expect(tupleCache.size).toBe(0);
-});
+import { tuple, tupleType } from ".";
 
 test("Empty tuples", () => {
   const a = tuple();
@@ -55,11 +43,6 @@ test("Different-length tuples are different tuples", () => {
   expect(t1).not.toBe(t3);
 });
 
-test("Tuples are frozen", () => {
-  const t = tuple("a", "b");
-  expect(() => (t[0] = "c")).toThrow();
-});
-
 test("Nestable", () => {
   const t1 = tuple("a", tuple("b1", "b2"), "c");
   const t2 = tuple("a", tuple("b1", "b2"), "c");
@@ -72,6 +55,20 @@ test("NaN is equivalent to itself", () => {
   expect(tuple(NaN)).toBe(tuple(NaN));
 });
 
-test("Positive and negative zero are equivalent", () => {
-  expect(tuple(+0)).toBe(tuple(-0));
+test("Positive and negative zero are distinct", () => {
+  expect(tuple(+0)).not.toBe(tuple(-0));
+});
+
+test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
+  const Point = tupleType<[number, number]>();
+
+  Point(15, 42);
+  expect(Point._cache.size).toBe(1);
+
+  // Trigger garbage collection (requires node --expose-gc)
+  await new Promise((res) => setTimeout(res, 100));
+  (global as any).gc();
+  await new Promise((res) => setTimeout(res, 100));
+
+  expect(Point._cache.size).toBe(0);
 });

@@ -1,13 +1,13 @@
 {
   "type": "module",
-  "name": "tuplets",
-  "version": "0.1.0",
+  "name": "tuple-ts",
+  "version": "0.1.1",
   "description": "Python-like tuples for JavaScript/TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "node --expose-gc ./node_modules/.bin/jest"
+    "test": "node --expose-gc ./node_modules/.bin/jest ./src/"
   },
   "author": "George Bradley",
   "license": "ISC",
@@ -17,11 +17,5 @@
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
   },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
-    }
-  }
+  "files": ["./dist"]
 }
