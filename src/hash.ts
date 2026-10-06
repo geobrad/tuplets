@@ -54,6 +54,7 @@ function stableRandomHash(
 }
 
 function* stringToUint32s(value: string): Generator<number> {
+  yield(value.length);
   for (let i = 0; i < value.length; i += 2) {
     const char1 = value.charCodeAt(i);
     const char2 = value.charCodeAt(i + 1);
