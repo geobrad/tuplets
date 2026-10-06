@@ -1,8 +1,23 @@
 {
   "type": "module",
   "name": "tuple-ts",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Python-like tuples for JavaScript/TypeScript",
+  "keywords": [
+    "tuple",
+    "tuples",
+    "record",
+    "records",
+    "interning",
+    "hash-consing",
+    "value-equality",
+    "structural-equality",
+    "composite-key",
+    "immutable",
+    "immutability",
+    "weakref",
+    "typescript"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
