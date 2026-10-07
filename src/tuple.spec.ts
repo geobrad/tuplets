@@ -1,4 +1,10 @@
-import { tuple, tupleType } from ".";
+import { tuple, defineTupleType, _tupleCache } from ".";
+
+async function waitForGC(): Promise<void> {  
+  await new Promise((res) => setTimeout(res, 0));
+  (global as any).gc();  // requires node --expose-gc
+  await new Promise((res) => setTimeout(res, 0));
+}
 
 test("Empty tuples", () => {
   const a = tuple();
@@ -80,15 +86,14 @@ test("Positive and negative zero are distinct", () => {
 });
 
 test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
-  const Point = tupleType<[number, number]>();
+  _tupleCache.reset();
+  expect(_tupleCache.size).toBe(0);
 
+  const Point = defineTupleType<[number, number]>();
   Point(15, 42);
-  expect(Point._cache.size).toBe(1);
+  expect(_tupleCache.size).toBe(1);
 
-  // Trigger garbage collection (requires node --expose-gc)
-  await new Promise((res) => setTimeout(res, 100));
-  (global as any).gc();
-  await new Promise((res) => setTimeout(res, 100));
+  await waitForGC();
 
-  expect(Point._cache.size).toBe(0);
+  expect(_tupleCache.size).toBe(0);
 });

@@ -1,20 +1,28 @@
-export default class <H, T extends object> {
+export default class<H, T extends object> {
   private readonly map: Map<H, Set<WeakRef<T>>> = new Map();
   private readonly hashFn: (obj: T) => H;
   private readonly identityFn: (obj1: T, obj2: T) => boolean;
-  private cleanupRegistry = new FinalizationRegistry(this.remove.bind(this));
+  private cleanupRegistry = new FinalizationRegistry<[H, WeakRef<T>]>((x) =>
+    this.remove(x),
+  );
 
-  constructor(hashFn: (obj: T) => H, identityFn: (obj1: T, obj2: T) => boolean) {
+  constructor(
+    hashFn: (obj: T) => H,
+    identityFn: (obj1: T, obj2: T) => boolean,
+  ) {
     this.hashFn = hashFn;
     this.identityFn = identityFn;
   }
 
   private remove([hash, ref]: [H, WeakRef<T>]): void {
     const hashBucket = this.map.get(hash);
-    if (hashBucket === undefined) throw new Error("Could not get tuple set");
-    if (!hashBucket.delete(ref))
-      throw new Error("Could not delete tuple WeakRef");
-    if (hashBucket.size === 0) this.map.delete(hash);
+    if (!hashBucket) {
+      return;
+    }
+    hashBucket.delete(ref);
+    if (hashBucket.size === 0) {
+      this.map.delete(hash);
+    }
   }
 
   get<U extends T>(obj: U): U {
@@ -39,8 +47,14 @@ export default class <H, T extends object> {
   }
 
   get size(): number {
-    return [...this.map.entries()]
-      .map(([_, b]) => b.size)
-      .reduce((a, b) => a + b, 0);
+    return Array.from(this.map.entries(), ([_, b]) => b.size).reduce(
+      (acc, x) => acc + x,
+      0,
+    );
+  }
+
+  reset(): void {
+    this.map.clear();
+    this.cleanupRegistry = new FinalizationRegistry((x) => this.remove(x));
   }
 }

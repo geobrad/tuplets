@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "tuple-ts",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Python-like tuples for JavaScript/TypeScript",
   "keywords": [
     "tuple",

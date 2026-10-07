@@ -77,15 +77,15 @@ console.log(grid.get(tuple(0, 0))); // "Origin"
 console.log(grid.get(tuple(3, 4))); // "Target"
 ```
 
-### 4. Custom Typed Tuples (`tupleType`)
+### 4. Custom Typed Tuples (`defineTupleType`)
 
-You can create isolated, strictly-typed tuple factories with their own independent intern caches:
+You can create strictly-typed tuple factories:
 
 ```ts
-import { tupleType } from "tuple-ts";
+import { defineTupleType } from "tuple-ts";
 
 type Point2D = [x: number, y: number];
-const Point = tupleType<Point2D>();
+const Point = defineTupleType<Point2D>();
 
 const p1 = Point(12, 34);
 const p2 = Point(12, 34);
@@ -107,12 +107,12 @@ console.log(userA === userB); // true
 console.log(userA.role);      // "admin"
 ```
 
-### 6. Keyed Records (`recordType().withKeys(...)`)
+### 6. Custom Typed Records (`defineRecordType`)
 
-Define records interned and deduplicated on a specific subset of primary keys:
+As with tuples, you can also create strictly-typed record factories:
 
 ```ts
-import { recordType } from "tuple-ts";
+import { defineRecordType } from "tuple-ts";
 
 interface UserProfile {
   id: string;
@@ -120,14 +120,13 @@ interface UserProfile {
   updatedAt: number;
 }
 
-// Only 'id' determines record identity
-const UserById = recordType<UserProfile>().withKeys("id");
+const User = defineRecordType<UserProfile>();
 
-const session1 = UserById({ id: "usr_1", name: "Alice", updatedAt: 1000 });
-const session2 = UserById({ id: "usr_1", name: "Alice B.", updatedAt: 2000 });
+const user1 = User({ id: "alice", name: "Alice", updatedAt: 1000 });
+const user2 = User({ name: "Alice", id: "alice", updatedAt: 1000 });
 
-console.log(session1 === session2); // true
-console.log(session1);              // { id: "usr_1" }
+console.log(user1 === user2); // true
+console.log(user1["name"]); // "Alice"
 ```
 
 ### 7. Memory Safety & Garbage Collection
@@ -135,7 +134,7 @@ console.log(session1);              // { id: "usr_1" }
 TupleTS uses `WeakRef` and `FinalizationRegistry` under the hood. When a tuple or record is no longer referenced anywhere in your program, the JavaScript runtime garbage-collects it, and its entry in the intern cache is automatically pruned.
 
 ```ts
-// No need to manually clear caches or worry about memory leaks!
+// No need to manually clear caches or worry about memory leaks.
 {
   const temp = tuple("transient", 123);
   // once 'temp' leaves scope and GC runs, the intern cache entry is freed.
