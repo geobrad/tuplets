@@ -1,6 +1,6 @@
 # TupleTS
 
-TupleTS is an implementation of interned tuples and records intended to be memory-safe, performant, and tiny.
+TupleTS is an implementation of tuples and records intended to be memory-safe, performant, and tiny.
 
 - **Referential Equality (`===`)**: Identical tuples and records return the same instance in memory.
 - **Composite Keys for `Set` & `Map`**: Use tuples or records as keys without custom serialization or hashing workarounds.
