@@ -5,13 +5,13 @@ import * as hash from "./hash";
 export type Tuple<T extends readonly unknown[] = readonly unknown[]> = T;
 
 export type TupleType<T extends Tuple = Tuple> = {
-  (...t: T): T;
+  <const T_ extends T>(...t: T_): T_;
   _cache: InternCache<number, T>;
 };
 
 export type KeyedRecordType<
   R extends Record<string, unknown> = Record<string, unknown>
-> = { (r: R): R; _cache: InternCache<number, R> };
+> = { <const R_ extends R>(r: R_): R_; _cache: InternCache<number, R> };
 
 export type RecordType<
   R extends Record<string, unknown> = Record<string, unknown>
@@ -49,14 +49,14 @@ function recordEquivalent(
 
 export function tupleType<T extends Tuple>(): TupleType<T> {
   const _cache = new InternCache<number, T>(hash.tupleHash, arrayEquivalent);
-  return Object.assign((...t: T) => Object.freeze(_cache.get(t)), {
+  return Object.assign(<T_ extends T>(...t: T_) => Object.freeze(_cache.get(t)), {
     _cache,
   });
 }
 
 export function recordType<T extends Record<string, unknown>>(): RecordType<T> {
   const _cache = new InternCache<number, T>(hash.recordHash, recordEquivalent);
-  return Object.assign(({ ...r }: T): T => Object.freeze(_cache.get(r)), {
+  return Object.assign(<T_ extends T>({ ...r }: T_): T_ => Object.freeze(_cache.get(r)), {
     _cache,
     withKeys: <K extends readonly (keyof T)[]>(...keys: K) =>
       recordTypeToKeyedRecordType<T, K>(...keys),
@@ -93,13 +93,24 @@ function recordTypeToKeyedRecordType<
       arrayEquivalent(recordToTuple(r1, keys), recordToTuple(r2, keys))
   );
   return Object.assign(
-    (r: R): R => {
+    <R_ extends R>(r: R_): R_ => {
       const r_: Partial<R> = {};
       for (const k of keys) {
         r_[k] = r[k];
       }
-      return Object.freeze(_cache.get(r_ as R));
+      return Object.freeze(_cache.get(r_ as R_));
     },
     { _cache }
   );
 }
+
+
+const x = tuple("a", 1);
+
+const r = record({ a: 1, b: "hi" });
+
+const tf = tupleType<[string, number]>();
+const tfResult = tf("a", 1);
+
+const rf = recordType<{ a: number; b: string }>();
+const rfResult = rf({ a: 1, b: "hi", c: "blah" });
