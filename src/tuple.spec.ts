@@ -55,6 +55,26 @@ test("NaN is equivalent to itself", () => {
   expect(tuple(NaN)).toBe(tuple(NaN));
 });
 
+test("NaN values with different bit representations are interned as identical", () => {
+  // Construct NaN with payload 1
+  const view1 = new DataView(new ArrayBuffer(8));
+  view1.setUint32(0, 0x7ff80000);
+  view1.setUint32(4, 0x00000001);
+  const nan1 = view1.getFloat64(0);
+  // Construct NaN with payload 2
+  const view2 = new DataView(new ArrayBuffer(8));
+  view2.setUint32(0, 0x7ff80000);
+  view2.setUint32(4, 0x00000002);
+  const nan2 = view2.getFloat64(0);
+  // Verify they are both recognized as NaNs and Object.is equivalent:
+  expect(Number.isNaN(nan1)).toBe(true);
+  expect(Number.isNaN(nan2)).toBe(true);
+  expect(Object.is(nan1, nan2)).toBe(true);
+  // If NaNs were not canonicalized in numberToUint32s, this would fail (.not.toBe)
+  // because nan1 and nan2 would hash to different buckets:
+  expect(tuple(nan1)).toBe(tuple(nan2));
+});
+
 test("Positive and negative zero are distinct", () => {
   expect(tuple(+0)).not.toBe(tuple(-0));
 });

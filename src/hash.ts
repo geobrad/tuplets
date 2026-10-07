@@ -1,4 +1,7 @@
-const UINT32_BASE = 2n ** 32n;
+const BIGINT_UINT32_MASK = 0xffffffffn;
+
+const float64Buffer = new Float64Array(1);
+const uint32View = new Uint32Array(float64Buffer.buffer);
 
 function murmurHash3Mix_32bit(keys: Iterable<number>, seed = 0): number {
   // The first (i.e., mixing) stage of the MurmurHash3 algorithm for 32-bit keys
@@ -11,13 +14,13 @@ function murmurHash3Mix_32bit(keys: Iterable<number>, seed = 0): number {
     k = Math.imul(k, 0x1b873593);
     hash ^= k;
     hash = (hash << 13) | (hash >>> 19); // ROTL32(h1, 13);
-    hash = Math.imul(hash, 5) + 0xe6546b64;
+    hash = (Math.imul(hash, 5) + 0xe6546b64) | 0; // Bitwise OR to force 32-bit
   }
   hash ^= keyCount * 4; // number of input bytes
   return hash >>> 0; // unsigned
 }
 
-function linearConguentialGenerator(seed: number = Date.now() >>> 0) {
+function linearCongruentialGenerator(seed: number = Date.now()) {
   let state = seed >>> 0; // Force to unsigned 32-bit
   return () => {
     // LCG constants from Numerical Recipes (good default)
@@ -26,7 +29,7 @@ function linearConguentialGenerator(seed: number = Date.now() >>> 0) {
   };
 }
 
-const randomUint32 = linearConguentialGenerator();
+const randomUint32 = linearCongruentialGenerator();
 
 const tupleSeed = randomUint32();
 const recordSeed = randomUint32();
@@ -40,10 +43,11 @@ const stringSeed = randomUint32();
 const registeredSymbolSeed = randomUint32();
 
 const objectHashMap = new WeakMap<object, number>();
+const symbolHashMap = new WeakMap<symbol, number>();
 
-function stableRandomHash(
-  map: WeakMap<object | symbol, number>,
-  value: object | symbol
+function stableRandomHash<T extends object | symbol>(
+  map: WeakMap<T, number>,
+  value: T
 ): number {
   if (value === null) return nullHash;
   const hash = map.get(value);
@@ -53,27 +57,31 @@ function stableRandomHash(
   return newHash;
 }
 
-function* stringToUint32s(value: string): Generator<number> {
-  yield(value.length);
-  for (let i = 0; i < value.length; i += 2) {
-    const char1 = value.charCodeAt(i);
-    const char2 = value.charCodeAt(i + 1);
-    yield (char2 << 16) | char1;
+function stringToUint32s(value: string): Array<number> {
+  const result = Array(Math.ceil(value.length / 2) + 1);
+  result[0] = value.length;
+  for (let i = 0; i < value.length / 2; i += 1) {
+    const char1 = value.charCodeAt(2 * i);
+    const char2 = value.charCodeAt(2 * i + 1);
+    result[i + 1] = (char2 << 16) | char1;
   }
+  return result;
 }
 
-function* numberToUint32s(value: number): Generator<number> {
-  const buffer = new ArrayBuffer(8); // 8 bytes = 64 bits
-  const view = new DataView(buffer);
-  view.setFloat64(0, value);
-  yield view.getUint32(0);
-  yield view.getUint32(4);
+function numberToUint32s(value: number): Array<number> {
+  float64Buffer[0] = Number.isNaN(value) ? NaN : value;
+  return [uint32View[0], uint32View[1]];
 }
 
-function* bigIntToUint32s(value: bigint): Generator<number> {
-  for (let n = value; n !== 0n; n /= UINT32_BASE) {
-    yield Number(((n % UINT32_BASE) + UINT32_BASE) % UINT32_BASE); // Safely non-negative
+function bigintToUint32s(value: bigint): number[] {
+  const isNegative = value < 0n;
+  let n = isNegative ? -value : value;
+  const result: Array<number> = [isNegative ? 1 : 0];
+  while (n !== 0n) {
+    result.push(Number(n & BIGINT_UINT32_MASK));
+    n >>= 32n;
   }
+  return result;
 }
 
 function valueHash(value: unknown): number {
@@ -83,13 +91,13 @@ function valueHash(value: unknown): number {
     case "number":
       return mixHashes(numberToUint32s(value), numberSeed);
     case "bigint":
-      return mixHashes(bigIntToUint32s(value), bigIntSeed);
+      return mixHashes(bigintToUint32s(value), bigIntSeed);
     case "boolean":
       return value ? trueHash : falseHash;
     case "symbol":
       const k = Symbol.keyFor(value);
       return k === undefined
-        ? stableRandomHash(objectHashMap, value)
+        ? stableRandomHash(symbolHashMap, value)
         : mixHashes(stringToUint32s(k), registeredSymbolSeed);
     case "undefined":
       return undefinedHash;
@@ -102,21 +110,19 @@ function valueHash(value: unknown): number {
 
 const mixHashes = murmurHash3Mix_32bit;
 
-function* valueHashes(values: Iterable<unknown>): Generator<number> {
-    for (const v of values) {
-        yield valueHash(v);
-    }
+function valueHashes(values: Iterable<unknown>): Array<number> {
+  return Array.from(values, valueHash);
 }
 
 export function tupleHash(elements: readonly unknown[]): number {
     return mixHashes(valueHashes(elements), tupleSeed);
 }
 
-function* keyAndValueHashes(record: Record<string, unknown>): Generator<number> {
-    for (const key of Object.keys(record).sort()) {
-        yield valueHash(key);
-        yield valueHash(record[key]);
-    }
+function keyAndValueHashes(record: Record<string, unknown>): Array<number> {
+    return Object.keys(record).sort().flatMap(key => [
+        valueHash(key),
+        valueHash(record[key])
+    ]);
 }
 
 export function recordHash(record: Record<string, unknown>): number {
