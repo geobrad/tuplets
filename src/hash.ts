@@ -31,8 +31,6 @@ function linearCongruentialGenerator(seed: number = Date.now()) {
 
 const randomUint32 = linearCongruentialGenerator();
 
-const tupleSeed = randomUint32();
-const structSeed = randomUint32();
 const nullHash = randomUint32();
 const undefinedHash = randomUint32();
 const falseHash = randomUint32();
@@ -87,18 +85,18 @@ function bigintToUint32s(value: bigint): number[] {
 function valueHash(value: unknown): number {
   switch (typeof value) {
     case "string":
-      return mixHashes(stringToUint32s(value), stringSeed);
+      return hashMixFn(stringToUint32s(value), stringSeed);
     case "number":
-      return mixHashes(numberToUint32s(value), numberSeed);
+      return hashMixFn(numberToUint32s(value), numberSeed);
     case "bigint":
-      return mixHashes(bigintToUint32s(value), bigIntSeed);
+      return hashMixFn(bigintToUint32s(value), bigIntSeed);
     case "boolean":
       return value ? trueHash : falseHash;
     case "symbol":
       const k = Symbol.keyFor(value);
       return k === undefined
         ? stableRandomHash(symbolHashMap, value)
-        : mixHashes(stringToUint32s(k), registeredSymbolSeed);
+        : hashMixFn(stringToUint32s(k), registeredSymbolSeed);
     case "undefined":
       return undefinedHash;
     case "object":
@@ -108,26 +106,7 @@ function valueHash(value: unknown): number {
   }
 }
 
-const mixHashes = murmurHash3Mix_32bit;
+export const valuesHash = (values: Iterable<unknown>, seed?: number): number =>
+  hashMixFn(Array.from(values, valueHash), seed);
 
-function valueHashes(values: Iterable<unknown>): Array<number> {
-  return Array.from(values, valueHash);
-}
-
-export function tupleHash(elements: readonly unknown[]): number {
-    return mixHashes(valueHashes(elements), tupleSeed);
-}
-
-function keyAndValueHashes(struct: Record<string, unknown>): Array<number> {
-    return Object.keys(struct).sort().flatMap(key => [
-        valueHash(key),
-        valueHash(struct[key])
-    ]);
-}
-
-export function structHash(struct: Record<string, unknown>): number {
-  return mixHashes(
-    keyAndValueHashes(struct),
-    structSeed
-  );
-}
+const hashMixFn = murmurHash3Mix_32bit;

@@ -1,5 +1,4 @@
 import InternCache from "./intern-cache";
-export { InternCache };
 import * as hash from "./hash";
 
 function arrayEquivalent(
@@ -29,12 +28,12 @@ function structEquivalent(
 }
 
 export const _tupleCache = new InternCache<number, readonly unknown[]>(
-  hash.tupleHash,
+  hash.valuesHash,
   arrayEquivalent,
 );
 
 export const _structCache = new InternCache<number, Record<string, unknown>>(
-  hash.structHash,
+  (r) => hash.valuesHash(Object.entries(r).flat()),
   structEquivalent,
 );
 
