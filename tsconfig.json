@@ -14,5 +14,4 @@
     "lib": ["ES2023", "ESNext.Iterator"]
   },
   "files": ["src/index.ts"],
-  "include": ["src/*.test.ts", "src/*.spec.ts"],
 }
