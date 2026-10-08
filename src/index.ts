@@ -33,7 +33,7 @@ export const _tupleCache = new InternCache<number, readonly unknown[]>(
 );
 
 export const _structCache = new InternCache<number, Record<string, unknown>>(
-  (r) => hash.valuesHash(Object.entries(r).flat()),
+  (r) => hash.valuesHash(Object.keys(r).sort().flatMap(k => [k, r[k]])),
   structEquivalent,
 );
 

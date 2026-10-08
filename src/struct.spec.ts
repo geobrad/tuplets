@@ -16,6 +16,13 @@ describe("struct", () => {
     expect(a === b).toBe(true);
   });
 
+  it("is order-agnostic", () => {
+    const a = struct({ x: 1, y: 2 });
+    const b = struct({ y: 2, x: 1 });
+    expect(a).toBe(b);
+    expect(a === b).toBe(true);
+  });
+
   it("returns different object if keys or values differ", () => {
     const s1 = struct({ x: 1, y: 2 });
     const s2 = struct({ x: 1, y: 3 });
