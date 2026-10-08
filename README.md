@@ -22,6 +22,8 @@ Equal values are **interned to the same object**.
 
 That makes tuples and structs immutable, naturally usable as composite `Map` keys and `Set` values, and particularly pleasant to use in functional TypeScript.
 
+**Zero dependencies · ~730 B minified · ~410 B minified + gzipped**
+
 ## Install
 
 ```bash
@@ -64,9 +66,9 @@ Tuples are ordinary frozen arrays, so there is no special API to learn:
 ```ts
 const t = tuple("hello", 42, true);
 
-t.length;       // 3
-t[0];            // "hello"
-[...t];          // ["hello", 42, true]
+t.length;           // 3
+t[0];               // "hello"
+[...t];             // ["hello", 42, true]
 Object.isFrozen(t); // true
 ```
 
