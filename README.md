@@ -22,7 +22,7 @@ Equal values are **interned to the same object**.
 
 That makes tuples and structs immutable, naturally usable as composite `Map` keys and `Set` values, and particularly pleasant to use in functional TypeScript.
 
-**Zero dependencies · ~730 B minified · ~410 B minified + gzipped**
+**Zero dependencies · Less than 1 KB gzipped**
 
 ## Install
 
