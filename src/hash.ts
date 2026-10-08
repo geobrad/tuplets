@@ -32,7 +32,7 @@ function linearCongruentialGenerator(seed: number = Date.now()) {
 const randomUint32 = linearCongruentialGenerator();
 
 const tupleSeed = randomUint32();
-const recordSeed = randomUint32();
+const structSeed = randomUint32();
 const nullHash = randomUint32();
 const undefinedHash = randomUint32();
 const falseHash = randomUint32();
@@ -118,16 +118,16 @@ export function tupleHash(elements: readonly unknown[]): number {
     return mixHashes(valueHashes(elements), tupleSeed);
 }
 
-function keyAndValueHashes(record: Record<string, unknown>): Array<number> {
-    return Object.keys(record).sort().flatMap(key => [
+function keyAndValueHashes(struct: Record<string, unknown>): Array<number> {
+    return Object.keys(struct).sort().flatMap(key => [
         valueHash(key),
-        valueHash(record[key])
+        valueHash(struct[key])
     ]);
 }
 
-export function recordHash(record: Record<string, unknown>): number {
+export function structHash(struct: Record<string, unknown>): number {
   return mixHashes(
-    keyAndValueHashes(record),
-    recordSeed
+    keyAndValueHashes(struct),
+    structSeed
   );
 }

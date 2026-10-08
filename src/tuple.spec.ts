@@ -1,15 +1,18 @@
-import { tuple, defineTupleType, _tupleCache } from ".";
+import { tuple, _tupleCache } from ".";
 
-async function waitForGC(): Promise<void> {  
+type ExpectNever<T extends never> = T;
+
+async function waitForGC(): Promise<void> {
   await new Promise((res) => setTimeout(res, 0));
-  (global as any).gc();  // requires node --expose-gc
+  (global as any).gc(); // requires node --expose-gc
   await new Promise((res) => setTimeout(res, 0));
 }
 
 test("Empty tuples", () => {
   const a = tuple();
   const b = tuple();
-  expect(b).toBe(a);
+  expect(b).toBe(a); // identity
+  expect(a === b).toBe(true); // equality
 });
 
 test("Indexability", () => {
@@ -32,13 +35,15 @@ test("Basic interned equality (if same input, same object)", () => {
   const f = () => {};
   const t1 = tuple(a, f, 42, "hi", undefined, true, null, 7839278492n);
   const t2 = tuple(a, f, 42, "hi", undefined, true, null, 7839278492n);
-  expect(t1).toBe(t2); // same object reference
+  expect(t1).toBe(t2); // identity
+  expect(t1 === t2).toBe(true); // equality
 });
 
 test("Referential inequality (same structure, different references)", () => {
   const t1 = tuple({}, 42);
   const t2 = tuple({}, 42);
-  expect(t1).not.toBe(t2); // different objects
+  expect(t1).not.toBe(t2); // non-identity
+  expect(t1 === t2).toBe(false); // non-equality
 });
 
 test("Different-length tuples are different tuples", () => {
@@ -54,11 +59,14 @@ test("Nestable", () => {
   const t2 = tuple("a", tuple("b1", "b2"), "c");
   const t3 = tuple("a", tuple("b1", "b3"), "c");
   expect(t2).toBe(t1);
+  expect(t1 === t2).toBe(true);
   expect(t3).not.toBe(t1);
+  type ExpectNoOverlap = ExpectNever<Extract<typeof t1, typeof t3>>;
 });
 
 test("NaN is equivalent to itself", () => {
   expect(tuple(NaN)).toBe(tuple(NaN));
+  expect(tuple(NaN) === tuple(NaN)).toBe(true);
 });
 
 test("NaN values with different bit representations are interned as identical", () => {
@@ -79,21 +87,36 @@ test("NaN values with different bit representations are interned as identical", 
   // If NaNs were not canonicalized in numberToUint32s, this would fail (.not.toBe)
   // because nan1 and nan2 would hash to different buckets:
   expect(tuple(nan1)).toBe(tuple(nan2));
+  expect(tuple(nan1) === tuple(nan2)).toBe(true);
 });
 
 test("Positive and negative zero are distinct", () => {
+  const t1 = tuple(+0);
+  const t2 = tuple(-0);
+  expect(t1).not.toBe(t2);
+  expect(t1 === t2).toBe(false);
   expect(tuple(+0)).not.toBe(tuple(-0));
+  expect(tuple(+0) === tuple(-0)).toBe(false);
 });
 
 test("Tuple cache entry is cleared when tuple is garbage-collected", async () => {
   _tupleCache.reset();
   expect(_tupleCache.size).toBe(0);
 
-  const Point = defineTupleType<[number, number]>();
+  type Point = [number, number];
+  const Point = tuple<Point>;
   Point(15, 42);
   expect(_tupleCache.size).toBe(1);
 
   await waitForGC();
 
   expect(_tupleCache.size).toBe(0);
+});
+
+test("Tuples are frozen", () => {
+  const t = tuple(1, 2, 3);
+  expect(Object.isFrozen(t)).toBe(true);
+  expect(() => {
+    (t as any)[0] = 42;
+  }).toThrow();
 });
