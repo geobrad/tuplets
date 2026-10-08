@@ -1,161 +1,330 @@
-# TupleTS
+# tuple-ts
 
-TupleTS implements tuples and structs with shallow equality and identity semantics in TypeScript/JavaScript. It is designed to be tiny, fast, and memory-safe.
+**Immutable tuples and structs with value-based identity for JavaScript and TypeScript.**
 
-- **Equality and Identity Semantics (`===` & `Object.is()`)**: Identical tuples and structs map to the same instance in memory.
-- **Composite Keys for `Set` and `Map`**: Use tuples or structs as keys without serialization or hashing workarounds.
-- **Memory-Safe**: No memory leaks ever due to advanced integration with garbage collection.
-- **Deeply Nestable & Immutable**: Tuples and structs can contain other tuples and structs.
-- **TypeScript First**: Full type inference.
-- **Customisable Sub-types**: Easily create your own custom tuple and struct sub-types.
-- **Zero Dependencies**: Lightweight implementation with fast hashing and no dependencies.
+JavaScript normally compares arrays and objects by reference:
 
----
+```ts
+[1, 2] === [1, 2] // false
 
-## Installation
+{ x: 1 } === { x: 1 } // false
+```
+
+`tuple-ts` gives you a different model:
+
+```ts
+tuple(1, 2) === tuple(1, 2) // true
+
+struct({ x: 1 }) === struct({ x: 1 }) // true
+```
+
+Equal values are **interned to the same object**.
+
+That makes tuples and structs immutable, naturally usable as composite `Map` keys and `Set` values, and particularly pleasant to use in functional TypeScript.
+
+## Install
 
 ```bash
 npm install tuple-ts
 ```
 
----
+## Tuples
 
-## Usage Examples
-
-### 1. Basic Tuples, Identity and Equality
-
-Tuples with the same elements evaluate to the exact same object reference:
+Create an immutable tuple with full TypeScript inference:
 
 ```ts
 import { tuple } from "tuple-ts";
 
-const a = tuple(1, "hello", true);
-const b = tuple(1, "hello", true);
+const point = tuple(10, 20);
+//    ^? readonly [10, 20]
 
-console.log(a === b); // true
-console.log(Object.is(a, b)); // true
-
-// Tuples are standard frozen arrays:
-console.log(a[0]);  // 1
-console.log(a.length);  // 3
-console.log([...a]);  // [1, "hello", true]
-console.log(Object.isFrozen(a));  // true
+console.log(point[0]); // 10
+console.log(point[1]); // 20
 ```
 
-### 2. Nested Tuples
-
-Tuples can be nested arbitrarily and maintain referential equality across structures:
+Calling `tuple` again with the same values gives you the **same object**:
 
 ```ts
-import { tuple } from "tuple-ts";
+const a = tuple(10, 20);
+const b = tuple(10, 20);
 
-const t1 = tuple("matrix", tuple(1, 0), tuple(0, 1));
-const t2 = tuple("matrix", tuple(1, 0), tuple(0, 1));
-const t3 = tuple("matrix", tuple(1, 1), tuple(0, 1));
-
-console.log(t1 === t2); // true
-console.log(t1 === t3); // false
+a === b; // true
+Object.is(a, b); // true
 ```
 
-### 3. Composite Keys in `Map` and `Set`
-
-In standard JavaScript, arrays and objects compare by reference, preventing them from being used as composite keys in `Map` or values in `Set`. With `tuple`, structural equality makes composite keys work seamlessly:
+Different values give you different objects:
 
 ```ts
-import { tuple } from "tuple-ts";
+tuple(10, 20) === tuple(10, 21); // false
+tuple(10, 20) === tuple(20, 10); // false
+```
 
-// Set: Deduplicating coordinate pairs
+Tuples are ordinary frozen arrays, so there is no special API to learn:
+
+```ts
+const t = tuple("hello", 42, true);
+
+t.length;       // 3
+t[0];            // "hello"
+[...t];          // ["hello", 42, true]
+Object.isFrozen(t); // true
+```
+
+## Why is this useful?
+
+### Composite `Map` keys
+
+JavaScript doesn't have value-based arrays, so this doesn't work:
+
+```ts
+const map = new Map();
+
+map.set([10, 20], "visited");
+
+map.get([10, 20]); // undefined
+```
+
+With `tuple-ts`:
+
+```ts
+const map = new Map();
+
+map.set(tuple(10, 20), "visited");
+
+map.get(tuple(10, 20)); // "visited"
+```
+
+The tuple constructed during the lookup is the same canonical object as the tuple used as the key.
+
+This is particularly useful for things like coordinates, memoization keys, graph nodes, dynamic-programming states, and other composite values.
+
+### `Set` of values
+
+The same applies to `Set`:
+
+```ts
 const visited = new Set();
+
 visited.add(tuple(10, 20));
 
-console.log(visited.has(tuple(10, 20))); // true!
-console.log(visited.has(tuple(10, 21))); // false
-
-// Map: Multi-argument function memoization / 2D grid
-const grid = new Map();
-grid.set(tuple(0, 0), "Origin");
-grid.set(tuple(3, 4), "Target");
-
-console.log(grid.get(tuple(0, 0))); // "Origin"
-console.log(grid.get(tuple(3, 4))); // "Target"
+visited.has(tuple(10, 20)); // true
+visited.has(tuple(10, 21)); // false
 ```
 
-### 4. Custom Typed Tuples
+No serialization, stringification, or custom hashing is required.
 
-You can easily create custom tuple sub-types:
+## Nested tuples
+
+Tuples can be nested:
 
 ```ts
-import { tuple } from "tuple-ts";
+const a = tuple(
+  "matrix",
+  tuple(1, 0),
+  tuple(0, 1),
+);
 
-type Point2D = [x: number, y: number];
-const Point2D = tuple<Point2D>;
+const b = tuple(
+  "matrix",
+  tuple(1, 0),
+  tuple(0, 1),
+);
 
-const p1 = Point2D(12, 34);
-const p2 = Point2D(12, 34);
-
-console.log(p1 === p2); // true
-console.log(Object.is(p1, p2)); // true
+a === b; // true
 ```
 
-### 5. Structs
+Because nested tuples themselves have value-based identity, the resulting structures are canonicalised naturally.
 
-Structs with the same keys and values evaluate to the exact same frozen object reference:
+```ts
+const a = tuple("a", tuple("b", "c"));
+const b = tuple("a", tuple("b", "c"));
+const c = tuple("a", tuple("b", "d"));
+
+a === b; // true
+a === c; // false
+```
+
+## Typed tuples
+
+You can create a reusable constructor for a particular tuple type:
+
+```ts
+type Point = [x: number, y: number];
+
+const Point = tuple<Point>;
+
+const a = Point(10, 20);
+const b = Point(10, 20);
+
+a === b; // true
+```
+
+The result retains the tuple's TypeScript type while gaining the same runtime identity semantics.
+
+## Structs
+
+`struct` provides the same semantics for objects:
 
 ```ts
 import { struct } from "tuple-ts";
 
-const userA = struct({ id: 1, role: "admin" });
-const userB = struct({ role: "admin", id: 1 }); // different key order
+const a = struct({
+  id: 1,
+  role: "admin",
+});
 
-console.log(userA === userB); // true
-console.log(Object.is(userA, userB)); // true
-console.log(userA.role); // "admin"
-console.log(Object.isFrozen(userA)); // true
+const b = struct({
+  role: "admin",
+  id: 1,
+});
+
+a === b; // true
 ```
 
-### 6. Custom Typed Structs
+Property order does not matter.
 
-As with tuples, you can easily create custom struct sub-types:
+Structs are frozen:
 
 ```ts
-import { struct } from "tuple-ts";
+Object.isFrozen(a); // true
+```
 
+And they work naturally as `Map` keys:
+
+```ts
+const users = new Map();
+
+users.set(
+  struct({ id: 42, role: "admin" }),
+  "Alice",
+);
+
+users.get(
+  struct({ role: "admin", id: 42 }),
+); // "Alice"
+```
+
+### Typed structs
+
+As with tuples, you can define a reusable typed constructor:
+
+```ts
 interface User {
   id: string;
   name: string;
   updatedAt: number;
 }
+
 const User = struct<User>;
 
-const user1 = User({ id: "alice", name: "Alice", updatedAt: 1000 });
-const user2 = User({ name: "Alice", id: "alice", updatedAt: 1000 });
+const a = User({
+  id: "alice",
+  name: "Alice",
+  updatedAt: 1000,
+});
 
-console.log(user1 === user2); // true
-console.log(user1.name); // "Alice"
+const b = User({
+  name: "Alice",
+  id: "alice",
+  updatedAt: 1000,
+});
+
+a === b; // true
 ```
 
-### 7. Memory Safety & Garbage Collection
+## Equality semantics
 
-TupleTS uses `WeakRef` and `FinalizationRegistry` under the hood. When a tuple or struct is no longer referenced anywhere in your program, the JavaScript runtime garbage-collects it, and its entry in the intern cache is automatically pruned.
+Primitive values are compared using [`Object.is`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is):
 
 ```ts
-// No need to manually clear caches or worry about memory leaks.
-{
-  const temp = tuple("transient", 123);
-  // once 'temp' leaves scope and GC runs, the intern cache entry is freed.
-}
+tuple(NaN) === tuple(NaN); // true
+
+tuple(+0) === tuple(-0);   // false
 ```
 
----
+Object values retain JavaScript's normal identity semantics.
 
-## Equality Semantics
+The same object is the same value:
 
-TupleTS compares primitives via `Object.is`:
-- `NaN` is equivalent to `NaN` (`tuple(NaN) === tuple(NaN)`).
-- `+0` and `-0` are treated as distinct values (`tuple(+0) !== tuple(-0)`).
-- Object elements are compared by object instance identity:
-  ```ts
-  const shared = { value: 1 };
-  tuple(shared) === tuple(shared); // true
-  tuple({}) !== tuple({});         // true (different object instances)
-  ```
+```ts
+const value = { x: 1 };
+
+tuple(value) === tuple(value); // true
+```
+
+Two separately created objects are different values:
+
+```ts
+tuple({ x: 1 }) === tuple({ x: 1 }); // false
+```
+
+This is **shallow equality**. `tuple-ts` does not recursively compare arbitrary JavaScript objects.
+
+Nested tuples and structs work particularly well because they are themselves canonical values.
+
+## Immutable by design
+
+Tuples and structs returned by `tuple-ts` are frozen:
+
+```ts
+const point = tuple(10, 20);
+
+Object.isFrozen(point); // true
+```
+
+This is important to the identity semantics: once a value has been interned, its contents cannot subsequently change while it is being used as a `Map` key or `Set` member.
+
+## Garbage-collection friendly
+
+Interning values creates a natural question: *doesn't the cache grow forever?*
+
+`tuple-ts` uses `WeakRef` and `FinalizationRegistry` internally. Cached values are weakly referenced, allowing the JavaScript garbage collector to reclaim values that are no longer referenced by the application.
+
+In other words, you don't have to manually maintain a global cache of every tuple you've ever created.
+
+## TypeScript first
+
+`tuple` and `struct` are designed to preserve TypeScript's inference:
+
+```ts
+const value = tuple(
+  "hello",
+  42,
+  true,
+);
+
+// readonly ["hello", 42, true]
+```
+
+The library is deliberately small: the runtime API consists of the two constructors you actually need:
+
+```ts
+import { tuple, struct } from "tuple-ts";
+```
+
+## When should I use it?
+
+`tuple-ts` is particularly useful when you want **small immutable values with stable identity**:
+
+* composite `Map` keys
+* `Set` membership
+* memoization keys
+* graph/search states
+* coordinates and other multi-dimensional values
+* functional programming
+* immutable application state
+* canonical representations of frequently repeated values
+
+If you just need an ordinary mutable array or object, use one. `tuple-ts` is for when you want the thing to behave more like a **value**.
+
+## Design
+
+The implementation uses hashing to locate candidate values and then performs an exact shallow equality check before reusing an existing value. Hash collisions therefore do not determine equality.
+
+The intern cache uses weak references, so canonical values do not need to be kept alive solely because they have previously been created.
+
+There are no runtime dependencies.
+
+## License
+
+ISC
