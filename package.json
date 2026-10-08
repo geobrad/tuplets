@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "tuple-ts",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Tuples and structs for TypeScript and JavaScript with equality and identity semantics.",
   "keywords": [
     "tuple",
@@ -11,6 +11,14 @@
     "shallow-equality",
     "typescript"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/geobrad/tuple-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/geobrad/tuple-ts/issues"
+  },
+  "homepage": "https://github.com/geobrad/tuple-ts",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
